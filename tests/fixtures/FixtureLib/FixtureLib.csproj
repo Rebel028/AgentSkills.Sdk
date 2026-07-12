@@ -7,6 +7,19 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <AgentSkillBodyFile>$(MSBuildProjectDirectory)/skill/body.md</AgentSkillBodyFile>
+    <AgentSkillDescriptionOverride>Fixture rules for FixtureLib APIs.</AgentSkillDescriptionOverride>
+    <AgentSkillUserInvocable>true</AgentSkillUserInvocable>
+    <AgentSkillContextStrategy>fork</AgentSkillContextStrategy>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AgentSkillReferenceFiles Include="$(MSBuildProjectDirectory)/skill/docs/**/*.md" />
+    <AgentSkillAssetFiles Include="$(MSBuildProjectDirectory)/skill/assets/sample-config.json" />
+    <AgentSkillScriptFiles Include="$(MSBuildProjectDirectory)/skill/tools/check.sh" />
+  </ItemGroup>
+
   <!-- ExcludeAgentSkillsSdk=true produces the no-SDK baseline nupkg for byte-level comparison. -->
   <ItemGroup Condition="'$(ExcludeAgentSkillsSdk)' != 'true'">
     <PackageReference Include="AgentSkills.Sdk" Version="0.1.0" PrivateAssets="all" />

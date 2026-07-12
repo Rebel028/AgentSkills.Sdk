@@ -29,19 +29,53 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AgentSkillsTfmSpecificContent</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <!-- Pack Engine entry point. Phase 3 replaces the stub body with the inline
-       C# task (ADR-0002) that composes both SKILL.md Variants, stages the
-       payload, and renders the Consumer Targets under
-       $(IntermediateOutputPath)agentskills/. -->
+  <!-- The Pack Engine (ADR-0002): one .cs source file, compiled on the
+       maintainer's machine. TaskName must match the class name in the file. -->
+  <UsingTask TaskName="AgentSkillsGeneratePackTask"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll"
+             Condition="'$(GenerateAgentSkills)' == 'true'">
+    <Task>
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\tasks\AgentSkillsPackEngine.cs" />
+    </Task>
+  </UsingTask>
+
+  <!-- Public pack-time seam (spec §5), gated on the master switch. The engine
+       itself executes in the per-TFM content walk below, which GenerateNuspec's
+       dependencies run first — this target stays as the documented hook point
+       maintainers can attach validation or inspection to. -->
   <Target Name="AgentSkillsGeneratePack"
           BeforeTargets="GenerateNuspec"
           Condition="'$(GenerateAgentSkills)' == 'true'">
   </Target>
 
-  <!-- Runs per inner build via TargetsForTfmSpecificContentInPackage; Phase 3
-       registers @(TfmSpecificPackageFile) items here, first TFM only. -->
+  <!-- Runs once per inner build via TargetsForTfmSpecificContentInPackage;
+       the first-TFM guard keeps multi-TFM packs free of duplicate paths.
+       All properties here resolve at execution time, after NuGet's pack
+       defaults (PackageId, PackageVersion) have been applied. -->
   <Target Name="_AgentSkillsTfmSpecificContent"
           Condition="'$(GenerateAgentSkills)' == 'true' AND '$(_AgentSkillsIsFirstTargetFramework)' == 'true'">
+
+    <AgentSkillsGeneratePackTask
+        PackageId="$(PackageId)"
+        PackageVersion="$(PackageVersion)"
+        StagingDirectory="$(IntermediateOutputPath)agentskills\"
+        ProjectDirectory="$(MSBuildProjectDirectory)"
+        ConsumerFlagName="$(AgentSkillsConsumerFlag)"
+        PackageDescription="$(Description)"
+        NameOverride="$(AgentSkillNameOverride)"
+        DescriptionOverride="$(AgentSkillDescriptionOverride)"
+        BodyFile="$(AgentSkillBodyFile)"
+        FullFile="$(AgentSkillFullFile)"
+        UserInvocable="$(AgentSkillUserInvocable)"
+        ContextStrategy="$(AgentSkillContextStrategy)"
+        ReadmeFile="$(PackageReadmeFile)"
+        ReferenceFiles="@(AgentSkillReferenceFiles)"
+        AssetFiles="@(AgentSkillAssetFiles)"
+        ScriptFiles="@(AgentSkillScriptFiles)">
+      <Output TaskParameter="PackageFiles" ItemName="TfmSpecificPackageFile" />
+    </AgentSkillsGeneratePackTask>
+
   </Target>
 
 </Project>
