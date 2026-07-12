@@ -21,6 +21,11 @@
   <ItemGroup>
     <None Include="build\AgentSkills.Sdk.props"   Pack="true" PackagePath="build\" />
     <None Include="build\AgentSkills.Sdk.targets" Pack="true" PackagePath="build\" />
+    <!-- Pack Engine ships as source (ADR-0002): compiled on the maintainer's
+         machine by RoslynCodeTaskFactory, not by this project (it would drag
+         Microsoft.Build references into an otherwise dependency-free package). -->
+    <Compile Remove="tasks\**\*.cs" />
+    <None Include="tasks\AgentSkillsPackEngine.cs" Pack="true" PackagePath="tasks\" />
   </ItemGroup>
 
 </Project>

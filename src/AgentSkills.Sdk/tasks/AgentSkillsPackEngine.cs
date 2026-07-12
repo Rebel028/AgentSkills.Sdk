@@ -5,7 +5,11 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 namespace AgentSkills.Sdk.Tasks
 {
@@ -255,6 +259,235 @@ namespace AgentSkills.Sdk.Tasks
         {
             string normalized = body.Replace("\r\n", "\n").Replace("\r", "\n").TrimEnd();
             return normalized + "\n";
+        }
+    }
+
+    /// <summary>
+    /// The Pack Engine (ADR-0002): runs at the maintainer's pack time, per the
+    /// first target framework only (spec §5). Validates identity, composes both
+    /// SKILL.md Variants, renders the Consumer Targets, and returns every file
+    /// to embed in the nupkg as items with a PackagePath metadata value.
+    /// </summary>
+    public sealed class AgentSkillsGeneratePackTask : Task
+    {
+        /// <summary>Package identity; validated upstream by NuGet.</summary>
+        [Required]
+        public string PackageId { get; set; } = "";
+
+        /// <summary>Full package version (may carry build metadata).</summary>
+        [Required]
+        public string PackageVersion { get; set; } = "";
+
+        /// <summary>Directory where generated files are staged (spec §5 step 5).</summary>
+        [Required]
+        public string StagingDirectory { get; set; } = "";
+
+        /// <summary>Project directory; anchors relative maintainer paths.</summary>
+        [Required]
+        public string ProjectDirectory { get; set; } = "";
+
+        /// <summary>Consumer Flag property name (derived or overridden).</summary>
+        [Required]
+        public string ConsumerFlagName { get; set; } = "";
+
+        /// <summary>The maintainer's &lt;Description&gt;; used only for the scaffolded body.</summary>
+        public string PackageDescription { get; set; } = "";
+
+        /// <summary>AgentSkillNameOverride (AGSK002 when invalid).</summary>
+        public string NameOverride { get; set; } = "";
+
+        /// <summary>AgentSkillDescriptionOverride (AGSK004 when over limit).</summary>
+        public string DescriptionOverride { get; set; } = "";
+
+        /// <summary>AgentSkillBodyFile (AGSK003 when set but missing).</summary>
+        public string BodyFile { get; set; } = "";
+
+        /// <summary>AgentSkillFullFile (AGSK005 when set but missing, AGSK006 with BodyFile).</summary>
+        public string FullFile { get; set; } = "";
+
+        /// <summary>AgentSkillUserInvocable raw value.</summary>
+        public string UserInvocable { get; set; } = "";
+
+        /// <summary>AgentSkillContextStrategy raw value.</summary>
+        public string ContextStrategy { get; set; } = "";
+
+        /// <summary>PackageReadmeFile; added as references/README.md unless taken (spec §2).</summary>
+        public string ReadmeFile { get; set; } = "";
+
+        /// <summary>@(AgentSkillReferenceFiles); RecursiveDir structure preserved.</summary>
+        public ITaskItem[] ReferenceFiles { get; set; } = new ITaskItem[0];
+
+        /// <summary>@(AgentSkillAssetFiles).</summary>
+        public ITaskItem[] AssetFiles { get; set; } = new ITaskItem[0];
+
+        /// <summary>@(AgentSkillScriptFiles).</summary>
+        public ITaskItem[] ScriptFiles { get; set; } = new ITaskItem[0];
+
+        /// <summary>Every file to pack, with PackagePath metadata (spec §4 layout).</summary>
+        [Output]
+        public ITaskItem[] PackageFiles { get; set; } = new ITaskItem[0];
+
+        /// <inheritdoc />
+        public override bool Execute()
+        {
+            if (!string.IsNullOrWhiteSpace(FullFile) && !string.IsNullOrWhiteSpace(BodyFile))
+            {
+                LogAgskError("AGSK006", "AgentSkillFullFile and AgentSkillBodyFile are mutually exclusive; set only one.");
+                return false;
+            }
+
+            string skillName;
+            if (!string.IsNullOrWhiteSpace(NameOverride))
+            {
+                skillName = NameOverride.Trim();
+                if (!AgentSkillsCore.IsValidSkillName(skillName))
+                {
+                    LogAgskError("AGSK002", $"AgentSkillNameOverride '{skillName}' violates agentskills.io name rules (1-64 chars, [a-z0-9-], no leading/trailing/consecutive hyphens).");
+                    return false;
+                }
+            }
+            else
+            {
+                skillName = AgentSkillsCore.ComputeSkillName(PackageId, PackageVersion);
+                if (skillName.Length > AgentSkillsCore.MaxSkillNameLength)
+                {
+                    LogAgskError("AGSK001", $"Computed Skill Name '{skillName}' is {skillName.Length} chars (max {AgentSkillsCore.MaxSkillNameLength}); set AgentSkillNameOverride.");
+                    return false;
+                }
+            }
+
+            string description = string.IsNullOrWhiteSpace(DescriptionOverride)
+                ? AgentSkillsCore.DefaultDescription(PackageId)
+                : DescriptionOverride.Trim();
+            if (description.Length > AgentSkillsCore.MaxDescriptionLength)
+            {
+                LogAgskError("AGSK004", $"Skill description is {description.Length} chars (max {AgentSkillsCore.MaxDescriptionLength}).");
+                return false;
+            }
+
+            string claudeVariant;
+            string agentsVariant;
+            if (!string.IsNullOrWhiteSpace(FullFile))
+            {
+                string fullPath = ResolvePath(FullFile);
+                if (!File.Exists(fullPath))
+                {
+                    LogAgskError("AGSK005", $"AgentSkillFullFile '{fullPath}' not found.");
+                    return false;
+                }
+                // Blind passthrough (spec §2): maintainer owns frontmatter correctness.
+                string full = File.ReadAllText(fullPath);
+                claudeVariant = full;
+                agentsVariant = full;
+            }
+            else
+            {
+                string body;
+                if (!string.IsNullOrWhiteSpace(BodyFile))
+                {
+                    string bodyPath = ResolvePath(BodyFile);
+                    if (!File.Exists(bodyPath))
+                    {
+                        LogAgskError("AGSK003", $"AgentSkillBodyFile '{bodyPath}' not found.");
+                        return false;
+                    }
+                    body = File.ReadAllText(bodyPath);
+                }
+                else
+                {
+                    body = AgentSkillsCore.ScaffoldBody(PackageId, PackageDescription);
+                }
+
+                SkillFrontmatter frontmatter = new SkillFrontmatter(
+                    skillName,
+                    description,
+                    PackageId,
+                    PackageVersion,
+                    string.IsNullOrWhiteSpace(UserInvocable) ? null : UserInvocable,
+                    string.IsNullOrWhiteSpace(ContextStrategy) ? null : ContextStrategy);
+                claudeVariant = AgentSkillsCore.ComposeClaudeVariant(frontmatter, body);
+                agentsVariant = AgentSkillsCore.ComposeAgentsVariant(frontmatter, body);
+            }
+
+            Directory.CreateDirectory(StagingDirectory);
+            string claudePath = Path.Combine(StagingDirectory, "SKILL.claude.md");
+            string agentsPath = Path.Combine(StagingDirectory, "SKILL.agents.md");
+            string targetsPath = Path.Combine(StagingDirectory, PackageId + ".targets");
+            File.WriteAllText(claudePath, claudeVariant);
+            File.WriteAllText(agentsPath, agentsVariant);
+            File.WriteAllText(targetsPath, ConsumerTargetsGenerator.Render(
+                PackageId, PackageVersion, skillName, ConsumerFlagName));
+
+            List<ITaskItem> files = new List<ITaskItem>();
+            files.Add(PackageFile(claudePath, "agent-assets/SKILL.claude.md"));
+            files.Add(PackageFile(agentsPath, "agent-assets/SKILL.agents.md"));
+            files.Add(PackageFile(targetsPath, "build/" + PackageId + ".targets"));
+
+            HashSet<string> payloadPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddPayload(files, payloadPaths, ReferenceFiles, "references");
+            AddPayload(files, payloadPaths, AssetFiles, "assets");
+            AddPayload(files, payloadPaths, ScriptFiles, "scripts");
+
+            // PackageReadmeFile joins references/ unless the maintainer already
+            // put a file at that exact payload path (spec §2 implicit behavior).
+            if (!string.IsNullOrWhiteSpace(ReadmeFile))
+            {
+                string readmePath = ResolvePath(ReadmeFile);
+                string readmeDestination = "agent-assets/payload/references/README.md";
+                if (File.Exists(readmePath) && !payloadPaths.Contains(readmeDestination))
+                {
+                    files.Add(PackageFile(readmePath, readmeDestination));
+                }
+            }
+
+            PackageFiles = files.ToArray();
+            return true;
+        }
+
+        private void AddPayload(List<ITaskItem> files, HashSet<string> payloadPaths, ITaskItem[] items, string bucket)
+        {
+            foreach (ITaskItem item in items)
+            {
+                string recursiveDir = item.GetMetadata("RecursiveDir").Replace('\\', '/');
+                string fileName = item.GetMetadata("Filename") + item.GetMetadata("Extension");
+                string packagePath = "agent-assets/payload/" + bucket + "/" + recursiveDir + fileName;
+                if (payloadPaths.Add(packagePath))
+                {
+                    files.Add(PackageFile(item.GetMetadata("FullPath"), packagePath));
+                }
+            }
+        }
+
+        private static ITaskItem PackageFile(string sourcePath, string packagePath)
+        {
+            TaskItem item = new TaskItem(sourcePath);
+            item.SetMetadata("PackagePath", packagePath);
+            return item;
+        }
+
+        private string ResolvePath(string path)
+        {
+            return Path.IsPathRooted(path) ? path : Path.Combine(ProjectDirectory, path);
+        }
+
+        private void LogAgskError(string code, string message)
+        {
+            Log.LogError(null, code, null, null, 0, 0, 0, 0, message);
+        }
+    }
+
+    /// <summary>
+    /// Renders the Consumer Targets (spec §6). Placeholder in Phase 3; the full
+    /// template (root chain, token map, stamp, retries) lands in Phase 4.
+    /// </summary>
+    public static class ConsumerTargetsGenerator
+    {
+        /// <summary>Renders the generated build/[PackageId].targets content.</summary>
+        public static string Render(string packageId, string packageVersion, string skillName, string consumerFlagName)
+        {
+            return "<Project>\n  <!-- AgentSkills.Sdk Consumer Targets for "
+                + packageId + " " + packageVersion
+                + " — full sync logic lands in Phase 4. -->\n</Project>\n";
         }
     }
 }
