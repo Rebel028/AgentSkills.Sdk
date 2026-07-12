@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- The exact sources RoslynCodeTaskFactory compiles at pack time (ADR-0002):
+       unit-tested here, shipped as .cs inside the SDK nupkg, never as a DLL. -->
+  <ItemGroup>
+    <Compile Include="../../src/AgentSkills.Sdk/tasks/AgentSkillsPackEngine.cs" Link="tasks/AgentSkillsPackEngine.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+</Project>
