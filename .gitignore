@@ -55,3 +55,8 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+.claude/
+.agents/
+Skills-lock.json
+.DS_Store
+artifacts/

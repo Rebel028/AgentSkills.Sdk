@@ -1,0 +1,13 @@
+<Project>
+
+  <!-- Imported at the top of the maintainer's project, before its property
+       groups: only order-independent defaults belong here. Anything that
+       depends on PackageId/AssemblyName is derived in AgentSkills.Sdk.targets,
+       which imports after the project body. -->
+  <PropertyGroup>
+    <!-- Master switch (spec §2). Referencing the SDK opts the maintainer in;
+         set false to pack with zero skill content. -->
+    <GenerateAgentSkills Condition="'$(GenerateAgentSkills)' == ''">true</GenerateAgentSkills>
+  </PropertyGroup>
+
+</Project>
