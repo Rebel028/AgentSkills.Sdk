@@ -413,14 +413,25 @@ namespace AgentSkills.Sdk.Tasks
             string claudePath = Path.Combine(StagingDirectory, "SKILL.claude.md");
             string agentsPath = Path.Combine(StagingDirectory, "SKILL.agents.md");
             string targetsPath = Path.Combine(StagingDirectory, PackageId + ".targets");
+            // gitignore and stamp travel as packed files so the consumer side
+            // needs only Copy (which has Retries); WriteLinesToFile races on
+            // concurrent first syncs. Extension-bearing, non-dot names: NuGet treats an
+            // extension-less PackagePath as a directory, and extraction is not
+            // reliable for dot-prefixed entries — Copy renames at destination.
+            string gitignorePath = Path.Combine(StagingDirectory, "skill.gitignore");
+            string stampPath = Path.Combine(StagingDirectory, "skill.stamp");
             File.WriteAllText(claudePath, claudeVariant);
             File.WriteAllText(agentsPath, agentsVariant);
             File.WriteAllText(targetsPath, ConsumerTargetsGenerator.Render(
                 PackageId, PackageVersion, skillName, ConsumerFlagName));
+            File.WriteAllText(gitignorePath, "*\n");
+            File.WriteAllText(stampPath, PackageVersion + "\n");
 
             List<ITaskItem> files = new List<ITaskItem>();
             files.Add(PackageFile(claudePath, "agent-assets/SKILL.claude.md"));
             files.Add(PackageFile(agentsPath, "agent-assets/SKILL.agents.md"));
+            files.Add(PackageFile(gitignorePath, "agent-assets/skill.gitignore"));
+            files.Add(PackageFile(stampPath, "agent-assets/skill.stamp"));
             files.Add(PackageFile(targetsPath, "build/" + PackageId + ".targets"));
 
             HashSet<string> payloadPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -586,6 +597,13 @@ namespace AgentSkills.Sdk.Tasks
           Condition=""!Exists('$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp')"" />
       <_AgsSkill_{{TAG}} Include=""$(MSBuildThisFileDirectory)../agent-assets/SKILL.%(_AgsDest_{{TAG}}.Variant).md"" AgsDest=""%(_AgsDest_{{TAG}}.Identity)""
           Condition=""!Exists('$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp')"" />
+      <!-- The synced directory gitignores itself. Both markers ship as packed
+           files and arrive via Copy: unlike WriteLinesToFile, Copy retries and
+           skips identical content, which makes concurrent first syncs safe. -->
+      <_AgsGitignore_{{TAG}} Include=""$(MSBuildThisFileDirectory)../agent-assets/skill.gitignore"" AgsDest=""%(_AgsDest_{{TAG}}.Identity)""
+          Condition=""!Exists('$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp')"" />
+      <_AgsStamp_{{TAG}} Include=""$(MSBuildThisFileDirectory)../agent-assets/skill.stamp"" AgsDest=""%(_AgsDest_{{TAG}}.Identity)""
+          Condition=""!Exists('$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp')"" />
     </ItemGroup>
 
     <Copy SourceFiles=""@(_AgsCopy_{{TAG}})""
@@ -598,14 +616,16 @@ namespace AgentSkills.Sdk.Tasks
           SkipUnchangedFiles=""true"" Retries=""3"" RetryDelayMilliseconds=""200""
           Condition=""'@(_AgsDest_{{TAG}})' != '' AND '@(_AgsSkill_{{TAG}})' != ''"" />
 
-    <!-- The synced directory gitignores itself: skill, stamp and .gitignore never reach source control. -->
-    <WriteLinesToFile File=""$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.gitignore""
-                      Lines=""*"" Overwrite=""true""
-                      Condition=""'@(_AgsDest_{{TAG}})' != '' AND !Exists('$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp')"" />
+    <Copy SourceFiles=""@(_AgsGitignore_{{TAG}})""
+          DestinationFiles=""@(_AgsGitignore_{{TAG}}->'$(_AgsRoot_{{TAG}})%(AgsDest)/{{SKILLNAME}}/.gitignore')""
+          SkipUnchangedFiles=""true"" Retries=""3"" RetryDelayMilliseconds=""200""
+          Condition=""'@(_AgsDest_{{TAG}})' != '' AND '@(_AgsGitignore_{{TAG}})' != ''"" />
 
-    <WriteLinesToFile File=""$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp""
-                      Lines=""{{VERSION}}"" Overwrite=""true""
-                      Condition=""'@(_AgsDest_{{TAG}})' != '' AND !Exists('$(_AgsRoot_{{TAG}})%(_AgsDest_{{TAG}}.Identity)/{{SKILLNAME}}/.agentskills-stamp')"" />
+    <!-- Stamp lands last so an interrupted sync re-runs (ADR-0008). -->
+    <Copy SourceFiles=""@(_AgsStamp_{{TAG}})""
+          DestinationFiles=""@(_AgsStamp_{{TAG}}->'$(_AgsRoot_{{TAG}})%(AgsDest)/{{SKILLNAME}}/.agentskills-stamp')""
+          SkipUnchangedFiles=""true"" Retries=""3"" RetryDelayMilliseconds=""200""
+          Condition=""'@(_AgsDest_{{TAG}})' != '' AND '@(_AgsStamp_{{TAG}})' != ''"" />
 
   </Target>
 </Project>

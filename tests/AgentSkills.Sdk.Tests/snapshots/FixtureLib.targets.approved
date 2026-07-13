@@ -58,6 +58,13 @@
           Condition="!Exists('$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp')" />
       <_AgsSkill_fixturelib_1_0_0 Include="$(MSBuildThisFileDirectory)../agent-assets/SKILL.%(_AgsDest_fixturelib_1_0_0.Variant).md" AgsDest="%(_AgsDest_fixturelib_1_0_0.Identity)"
           Condition="!Exists('$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp')" />
+      <!-- The synced directory gitignores itself. Both markers ship as packed
+           files and arrive via Copy: unlike WriteLinesToFile, Copy retries and
+           skips identical content, which makes concurrent first syncs safe. -->
+      <_AgsGitignore_fixturelib_1_0_0 Include="$(MSBuildThisFileDirectory)../agent-assets/skill.gitignore" AgsDest="%(_AgsDest_fixturelib_1_0_0.Identity)"
+          Condition="!Exists('$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp')" />
+      <_AgsStamp_fixturelib_1_0_0 Include="$(MSBuildThisFileDirectory)../agent-assets/skill.stamp" AgsDest="%(_AgsDest_fixturelib_1_0_0.Identity)"
+          Condition="!Exists('$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_AgsCopy_fixturelib_1_0_0)"
@@ -70,14 +77,16 @@
           SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200"
           Condition="'@(_AgsDest_fixturelib_1_0_0)' != '' AND '@(_AgsSkill_fixturelib_1_0_0)' != ''" />
 
-    <!-- The synced directory gitignores itself: skill, stamp and .gitignore never reach source control. -->
-    <WriteLinesToFile File="$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.gitignore"
-                      Lines="*" Overwrite="true"
-                      Condition="'@(_AgsDest_fixturelib_1_0_0)' != '' AND !Exists('$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp')" />
+    <Copy SourceFiles="@(_AgsGitignore_fixturelib_1_0_0)"
+          DestinationFiles="@(_AgsGitignore_fixturelib_1_0_0->'$(_AgsRoot_fixturelib_1_0_0)%(AgsDest)/use-fixturelib-v1-0-0/.gitignore')"
+          SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200"
+          Condition="'@(_AgsDest_fixturelib_1_0_0)' != '' AND '@(_AgsGitignore_fixturelib_1_0_0)' != ''" />
 
-    <WriteLinesToFile File="$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp"
-                      Lines="1.0.0" Overwrite="true"
-                      Condition="'@(_AgsDest_fixturelib_1_0_0)' != '' AND !Exists('$(_AgsRoot_fixturelib_1_0_0)%(_AgsDest_fixturelib_1_0_0.Identity)/use-fixturelib-v1-0-0/.agentskills-stamp')" />
+    <!-- Stamp lands last so an interrupted sync re-runs (ADR-0008). -->
+    <Copy SourceFiles="@(_AgsStamp_fixturelib_1_0_0)"
+          DestinationFiles="@(_AgsStamp_fixturelib_1_0_0->'$(_AgsRoot_fixturelib_1_0_0)%(AgsDest)/use-fixturelib-v1-0-0/.agentskills-stamp')"
+          SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200"
+          Condition="'@(_AgsDest_fixturelib_1_0_0)' != '' AND '@(_AgsStamp_fixturelib_1_0_0)' != ''" />
 
   </Target>
 </Project>

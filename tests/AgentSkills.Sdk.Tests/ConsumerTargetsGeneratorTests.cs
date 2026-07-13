@@ -90,11 +90,11 @@ public sealed class ConsumerTargetsGeneratorTests
         XElement target = document.Root!.Elements().Single(e => e.Name.LocalName == "Target");
         XElement[] tasks = target.Elements().ToArray();
 
-        // Last task in the target writes the stamp; every sync task is guarded on it.
+        // Last task in the target copies the stamp; every sync item is guarded on it.
         XElement lastTask = tasks.Last();
-        Assert.Equal("WriteLinesToFile", lastTask.Name.LocalName);
-        Assert.EndsWith(".agentskills-stamp", lastTask.Attribute("File")!.Value);
-        Assert.Equal("2.4.1-preview.3", lastTask.Attribute("Lines")!.Value);
+        Assert.Equal("Copy", lastTask.Name.LocalName);
+        Assert.Contains(".agentskills-stamp", lastTask.Attribute("DestinationFiles")!.Value);
+        Assert.Contains("_AgsStamp_", lastTask.Attribute("SourceFiles")!.Value);
 
         foreach (XElement copy in tasks.Where(t => t.Name.LocalName == "Copy"))
         {

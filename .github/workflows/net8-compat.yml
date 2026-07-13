@@ -2,7 +2,7 @@ name: .NET 8 compatibility
 
 # Guards the promise that the shipped package works on .NET 8 toolchains:
 # a maintainer packing with the 8 SDK (Pack Engine under MSBuild 17.8) and
-# a consumer building a net8.0 project. The SDK repo itself builds with 9.
+# a consumer building a net8.0 project. The SDK repo itself builds with 10.
 
 on:
   push:
@@ -27,9 +27,9 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
+            10.0.x
 
-      - name: Pack the SDK (9 SDK — repo toolchain)
+      - name: Pack the SDK (10 SDK — repo toolchain)
         run: dotnet pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o "$RUNNER_TEMP/feed"
 
       - name: Pin .NET 8 SDK

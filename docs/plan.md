@@ -3,7 +3,7 @@
 Spec: [spec.md](./spec.md). All builds/tests run through Docker (no local .NET SDK — see CLAUDE.md):
 
 ```bash
-docker run --rm -v "$PWD":/src -w /src mcr.microsoft.com/dotnet/sdk:9.0 dotnet test
+docker run --rm -v "$PWD":/src -w /src mcr.microsoft.com/dotnet/sdk:10.0 dotnet test
 ```
 
 ## Phase 1 — SDK skeleton

@@ -117,7 +117,7 @@ public sealed class ConsumerMatrixTests : IClassFixture<PackedFeedFixture>
         }
         File.WriteAllText(Path.Combine(root, "all.csproj"),
             "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n"
-            + "    <TargetFramework>net9.0</TargetFramework>\n"
+            + "    <TargetFramework>net10.0</TargetFramework>\n"
             // Aggregator only fans out; without this it would glob the child
             // projects' sources from the repo root and double-compile them.
             + "    <EnableDefaultItems>false</EnableDefaultItems>\n  </PropertyGroup>\n"
@@ -237,7 +237,7 @@ public sealed class ConsumerMatrixTests : IClassFixture<PackedFeedFixture>
             // Embedded quotes keep the semicolon out of dotnet's -p splitting
             // while still reaching MSBuild unescaped (%3B would stay escaped
             // and break the SDK's TargetFrameworks dispatch).
-            + " -p:FixtureTargetFrameworks=\\\"net9.0;netstandard2.0\\\""
+            + " -p:FixtureTargetFrameworks=\\\"net10.0;netstandard2.0\\\""
             + " -p:Version=3.0.0",
             _feed.RepoRoot);
 
@@ -247,7 +247,7 @@ public sealed class ConsumerMatrixTests : IClassFixture<PackedFeedFixture>
         using System.IO.Compression.ZipArchive nupkg = System.IO.Compression.ZipFile.OpenRead(nupkgPath);
         string[] entries = nupkg.Entries.Select(e => e.FullName).ToArray();
 
-        Assert.Contains("lib/net9.0/FixtureLib.dll", entries);
+        Assert.Contains("lib/net10.0/FixtureLib.dll", entries);
         Assert.Contains("lib/netstandard2.0/FixtureLib.dll", entries);
         // Exactly one content set: no duplicated agent-assets entries.
         Assert.Equal(entries.Length, entries.Distinct(StringComparer.OrdinalIgnoreCase).Count());

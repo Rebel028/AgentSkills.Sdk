@@ -6,7 +6,7 @@ Ship [agentskills.io](https://agentskills.io/specification)-compliant **agent sk
 - **Explicit opt-in** — nothing is written unless the consumer sets the Consumer Flag.
 - **Monorepo-safe** — versioned skill directories, stamp-guarded no-op rebuilds, `Copy` retries for parallel builds.
 - **Repo hygiene** — every synced skill directory gitignores itself.
-- **Toolchain range** — pack and consume verified on .NET 8 and .NET 9 SDKs (CI-guarded); the package ships no binaries, so no runtime dependency exists.
+- **Toolchain range** — pack and consume verified on .NET 8, 9 and 10 SDKs (CI-guarded); the package ships no binaries, so no runtime dependency exists.
 
 ## Maintainer quick start
 
