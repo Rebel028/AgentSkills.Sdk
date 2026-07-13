@@ -1,0 +1,71 @@
+name: .NET 8 compatibility
+
+# Guards the promise that the shipped package works on .NET 8 toolchains:
+# a maintainer packing with the 8 SDK (Pack Engine under MSBuild 17.8) and
+# a consumer building a net8.0 project. The SDK repo itself builds with 9.
+
+on:
+  push:
+    branches: [master, develop]
+    paths:
+      - 'src/**'
+      - 'tests/fixtures/**'
+      - '.github/workflows/net8-compat.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/fixtures/**'
+      - '.github/workflows/net8-compat.yml'
+
+jobs:
+  net8-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Pack the SDK (9 SDK — repo toolchain)
+        run: dotnet pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o "$RUNNER_TEMP/feed"
+
+      - name: Pin .NET 8 SDK
+        run: |
+          echo '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}' > global.json
+          dotnet --version | grep -q '^8\.' || { echo "expected 8.x SDK"; exit 1; }
+
+      - name: Maintainer pack under .NET 8 (Pack Engine on MSBuild 17.8)
+        run: >
+          dotnet pack tests/fixtures/FixtureLib/FixtureLib.csproj -c Release
+          -o "$RUNNER_TEMP/feed"
+          -p:RestoreSources="$RUNNER_TEMP/feed"
+          -p:FixtureTargetFrameworks=net8.0
+
+      - name: Consumer build under .NET 8 syncs the skill
+        run: |
+          mkdir -p "$RUNNER_TEMP/consumer/.git"
+          cd "$RUNNER_TEMP/consumer"
+          cat > NuGet.config <<EOF
+          <configuration><packageSources><clear /><add key="local" value="$RUNNER_TEMP/feed" /></packageSources></configuration>
+          EOF
+          cat > Consumer.csproj <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net8.0</TargetFramework>
+              <FixtureLibAgentSkills>claude-code;universal</FixtureLibAgentSkills>
+            </PropertyGroup>
+            <ItemGroup><PackageReference Include="FixtureLib" Version="1.0.0" /></ItemGroup>
+          </Project>
+          EOF
+          echo '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}' > global.json
+          dotnet build
+          test -f .claude/skills/use-fixturelib-v1-0-0/SKILL.md
+          test -f .agents/skills/use-fixturelib-v1-0-0/SKILL.md
+          test -f .agents/skills/use-fixturelib-v1-0-0/references/api.md
+          test -f .agents/skills/use-fixturelib-v1-0-0/.agentskills-stamp
+          grep -q "user-invocable: true" .claude/skills/use-fixturelib-v1-0-0/SKILL.md
+          grep -q "metadata:" .agents/skills/use-fixturelib-v1-0-0/SKILL.md
+          echo ".NET 8 consumer sync verified"
