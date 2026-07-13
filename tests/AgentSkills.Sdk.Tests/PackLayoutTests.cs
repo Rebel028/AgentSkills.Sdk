@@ -18,7 +18,7 @@ public sealed class PackLayoutTests
     private static string RepoRoot()
     {
         DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "docs", "spec.md")))
+        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "AgentSkills.Sdk.sln")))
         {
             directory = directory.Parent;
         }
