@@ -232,8 +232,11 @@ public sealed class ConsumerMatrixTests : IClassFixture<PackedFeedFixture>
             "pack tests/fixtures/FixtureLib/FixtureLib.csproj -c Release"
             + $" -o \"{Path.Combine(_feed.WorkRoot, "multi-tfm")}\""
             // netstandard2.0 needs NETStandard.Library, which the local feed
-            // doesn't carry — allow nuget.org for this one restore.
-            + $" -p:RestoreSources=\"{_feed.FeedDirectory}%3Bhttps://api.nuget.org/v3/index.json\""
+            // doesn't carry — allow nuget.org for this one restore. The URL's
+            // slashes are %2F-escaped: RestoreSources goes through MSBuild item
+            // expansion, which on Windows normalizes / to \ and turns the URL
+            // into a relative path (NU1301).
+            + $" -p:RestoreSources=\"{_feed.FeedDirectory}%3Bhttps:%2F%2Fapi.nuget.org%2Fv3%2Findex.json\""
             // Embedded quotes keep the semicolon out of dotnet's -p splitting
             // while still reaching MSBuild unescaped (%3B would stay escaped
             // and break the SDK's TargetFrameworks dispatch).
