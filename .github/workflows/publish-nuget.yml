@@ -1,0 +1,58 @@
+name: Publish NuGet package
+
+# Publishes AgentSkills.Sdk to nuget.org when the SDK csproj changes on
+# master AND its <Version> actually changed. Requires the NUGET_API_KEY
+# repository secret.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/AgentSkills.Sdk/AgentSkills.Sdk.csproj'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # HEAD~1 is needed to diff the previous <Version>.
+          fetch-depth: 2
+
+      - name: Detect version change
+        id: version
+        run: |
+          NEW=$(grep -oPm1 '(?<=<Version>)[^<]+' src/AgentSkills.Sdk/AgentSkills.Sdk.csproj)
+          OLD=$(git show HEAD~1:src/AgentSkills.Sdk/AgentSkills.Sdk.csproj 2>/dev/null \
+                | grep -oPm1 '(?<=<Version>)[^<]+' || echo "")
+          echo "Version: '$OLD' -> '$NEW'"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          if [ -n "$NEW" ] && { [ "$NEW" != "$OLD" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; }; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.version.outputs.changed == 'true'
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Test
+        if: steps.version.outputs.changed == 'true'
+        # -m:1 serializes the two test assemblies: both spawn dotnet pack of the
+        # SDK project, which collides in obj/ when run concurrently.
+        run: dotnet test AgentSkills.Sdk.sln -c Release -m:1
+
+      - name: Pack
+        if: steps.version.outputs.changed == 'true'
+        run: dotnet pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o artifacts/publish
+
+      - name: Push
+        if: steps.version.outputs.changed == 'true'
+        run: >
+          dotnet nuget push artifacts/publish/AgentSkills.Sdk.${{ steps.version.outputs.new }}.nupkg
+          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
