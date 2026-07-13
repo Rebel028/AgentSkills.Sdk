@@ -15,7 +15,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # HEAD~1 is needed to diff the previous <Version>.
           fetch-depth: 2
@@ -34,7 +34,7 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         if: steps.version.outputs.changed == 'true'
         with:
           dotnet-version: 9.0.x
