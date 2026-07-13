@@ -75,6 +75,8 @@ public sealed class PackLayoutTests
                 "agent-assets/payload/references/api.md",
                 "agent-assets/payload/references/guides/quickstart.md",
                 "agent-assets/payload/scripts/check.sh",
+                "agent-assets/skill.gitignore",
+                "agent-assets/skill.stamp",
                 "build/FixtureLib.targets",
             };
             Assert.Equal(expected, skillEntries);

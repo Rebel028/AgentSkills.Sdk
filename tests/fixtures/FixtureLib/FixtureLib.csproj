@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- FixtureTargetFrameworks switches the fixture to multi-targeting for the
          integration matrix's NU5118 case. -->
-    <TargetFramework Condition="'$(FixtureTargetFrameworks)' == ''">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(FixtureTargetFrameworks)' == ''">net10.0</TargetFramework>
     <TargetFrameworks Condition="'$(FixtureTargetFrameworks)' != ''">$(FixtureTargetFrameworks)</TargetFrameworks>
     <Version>1.0.0</Version>
     <Description>Fixture library for AgentSkills.Sdk packaging tests.</Description>

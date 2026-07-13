@@ -103,6 +103,8 @@ build/
 agent-assets/
   SKILL.claude.md              ← claude Variant (Claude fields top-level)
   SKILL.agents.md              ← agents Variant (spec-pure; extensions in metadata:)
+  skill.gitignore              ← copied to <skill dir>/.gitignore (content: *)
+  skill.stamp                  ← copied last to <skill dir>/.agentskills-stamp (content: package version)
   payload/
     references/...             ← @(AgentSkillReferenceFiles), RecursiveDir preserved
     assets/...                 ← @(AgentSkillAssetFiles)
@@ -194,9 +196,10 @@ Sketch of the generated file (illustrative; placeholders `{...}` are interpolate
          the Version Stamp already matches (ADR-0008) -->
     <!--   dest dir: $(_AgsRoot)%(_AgsDest.Identity)\{skillname}\               -->
     <!--   Copy payload/** + SKILL.%(Variant).md → SKILL.md                     -->
-    <!--   Copy SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200" -->
-    <!--   WriteLinesToFile .gitignore  Lines="*"  (inside the skill dir)       -->
-    <!--   WriteLinesToFile .agentskills-stamp Lines="{packageversion}"  LAST   -->
+    <!--   Copy agent-assets/skill.gitignore → .gitignore, agent-assets/skill.stamp →       -->
+    <!--     .agentskills-stamp (LAST). Everything is Copy with                 -->
+    <!--     SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200" -->
+    <!--     — WriteLinesToFile has no retry and races on concurrent first sync -->
   </Target>
 </Project>
 ```

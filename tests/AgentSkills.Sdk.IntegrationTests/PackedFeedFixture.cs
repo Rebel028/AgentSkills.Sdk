@@ -134,7 +134,7 @@ public sealed class PackedFeedFixture : IDisposable
     {
         StringBuilder project = new StringBuilder();
         project.Append("<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n");
-        project.Append("    <TargetFramework>net9.0</TargetFramework>\n");
+        project.Append("    <TargetFramework>net10.0</TargetFramework>\n");
         if (flagValue != null)
         {
             project.Append("    <FixtureLibAgentSkills>").Append(flagValue).Append("</FixtureLibAgentSkills>\n");
