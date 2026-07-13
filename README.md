@@ -1,5 +1,7 @@
 # AgentSkills.Sdk
 
+[![NuGet](https://img.shields.io/nuget/v/AgentSkills.Sdk.svg)](https://www.nuget.org/packages/AgentSkills.Sdk/)
+
 Ship [agentskills.io](https://agentskills.io/specification)-compliant **agent skills** inside your NuGet package. At `dotnet pack` time the SDK composes a `SKILL.md` (two variants: Claude Code and spec-pure) plus your reference docs, assets and scripts into the nupkg, together with a generated, self-contained `build/<PackageId>.targets`. When a consumer opts in, that targets file copies the skill into their workspace's agent directories (`.claude/skills/`, `.agents/skills/`, …) on build.
 
 - **Zero consumer footprint** — no transitive packages, no DLLs, no tasks on the consumer side; only declarative MSBuild XML.
@@ -14,7 +16,7 @@ Ship [agentskills.io](https://agentskills.io/specification)-compliant **agent sk
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="AgentSkills.Sdk" Version="0.1.0" PrivateAssets="all" />
+  <PackageReference Include="AgentSkills.Sdk" Version="0.1.1" PrivateAssets="all" />
 </ItemGroup>
 ```
 

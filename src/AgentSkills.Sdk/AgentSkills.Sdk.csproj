@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
 
     <PackageId>AgentSkills.Sdk</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Description>Ships agentskills.io-compliant agent skills inside a NuGet package: composes SKILL.md variants at pack time and generates the consumer-side sync targets. Consumers opt in with one MSBuild property and the skill lands in .claude/skills/, .agents/skills/ or a custom directory on build — no tools, no DLLs, no transitive dependencies.</Description>
     <Authors>Rebel028</Authors>
     <PackageProjectUrl>https://github.com/Rebel028/AgentSkills.Sdk</PackageProjectUrl>
