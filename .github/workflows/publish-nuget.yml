@@ -48,11 +48,17 @@ jobs:
       - name: Pack
         if: steps.version.outputs.changed == 'true'
         run: dotnet pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o artifacts/publish
-
+      
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: Rebel028
+          
       - name: Push
         if: steps.version.outputs.changed == 'true'
         run: >
           dotnet nuget push artifacts/publish/AgentSkills.Sdk.${{ steps.version.outputs.new }}.nupkg
-          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate
