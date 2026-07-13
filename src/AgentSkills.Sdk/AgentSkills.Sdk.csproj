@@ -6,8 +6,13 @@
 
     <PackageId>AgentSkills.Sdk</PackageId>
     <Version>0.1.0</Version>
-    <Description>Ships agentskills.io-compliant agent skills inside a NuGet package: composes SKILL.md variants at pack time and generates the consumer-side sync targets.</Description>
+    <Description>Ships agentskills.io-compliant agent skills inside a NuGet package: composes SKILL.md variants at pack time and generates the consumer-side sync targets. Consumers opt in with one MSBuild property and the skill lands in .claude/skills/, .agents/skills/ or a custom directory on build — no tools, no DLLs, no transitive dependencies.</Description>
     <Authors>Rebel028</Authors>
+    <PackageProjectUrl>https://github.com/Rebel028/AgentSkills.Sdk</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Rebel028/AgentSkills.Sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>agent-skills;agentskills;skills;SKILL.md;ai;llm;agents;claude;claude-code;copilot;cursor;codex;gemini-cli;msbuild;buildtools;devtools</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 
     <!-- Pack-time-only tooling (ADR-0001): no assembly, no dependencies, no
          transitive flow. Consumers of a maintainer's package inherit nothing. -->
@@ -19,6 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <None Include="build\AgentSkills.Sdk.props"   Pack="true" PackagePath="build\" />
     <None Include="build\AgentSkills.Sdk.targets" Pack="true" PackagePath="build\" />
     <!-- Pack Engine ships as source (ADR-0002): compiled on the maintainer's

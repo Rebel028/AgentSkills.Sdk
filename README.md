@@ -82,6 +82,6 @@ Skill directories are named `use-<packageid>-v<version>` — versions coexist; d
 | AGSK101 | warning | Unknown Agent Token in the Consumer Flag (skipped) |
 | AGSK102 | warning | Workspace root fell back to the project directory |
 
-## Docs
+## Source & issues
 
-Spec: [docs/spec.md](docs/spec.md) · Plan: [docs/plan.md](docs/plan.md) · Decisions: [docs/adr/](docs/adr/) · Glossary: [CONTEXT.md](CONTEXT.md)
+[github.com/Rebel028/AgentSkills.Sdk](https://github.com/Rebel028/AgentSkills.Sdk)
