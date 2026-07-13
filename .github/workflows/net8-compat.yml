@@ -30,7 +30,9 @@ jobs:
             10.0.x
 
       - name: Pack the SDK (10 SDK — repo toolchain)
-        run: dotnet pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o "$RUNNER_TEMP/feed"
+        # artifacts/packages is the "local" source the fixture's nuget.config
+        # maps AgentSkills.Sdk to; any other feed is rejected by the mapping.
+        run: dotnet pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o artifacts/packages
 
       - name: Pin .NET 8 SDK
         run: |
@@ -38,10 +40,11 @@ jobs:
           dotnet --version | grep -q '^8\.' || { echo "expected 8.x SDK"; exit 1; }
 
       - name: Maintainer pack under .NET 8 (Pack Engine on MSBuild 17.8)
+        # No -p:RestoreSources — it would defeat the fixture's
+        # packageSourceMapping (NU1100: source not considered).
         run: >
           dotnet pack tests/fixtures/FixtureLib/FixtureLib.csproj -c Release
           -o "$RUNNER_TEMP/feed"
-          -p:RestoreSources="$RUNNER_TEMP/feed"
           -p:FixtureTargetFrameworks=net8.0
 
       - name: Consumer build under .NET 8 syncs the skill

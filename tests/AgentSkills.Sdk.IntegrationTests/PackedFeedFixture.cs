@@ -27,11 +27,14 @@ public sealed class PackedFeedFixture : IDisposable
         Directory.CreateDirectory(FeedDirectory);
         Directory.CreateDirectory(NugetCache);
 
-        Run($"pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o \"{FeedDirectory}\"", RepoRoot);
+        // The SDK lands in artifacts/packages — the "local" source the fixture's
+        // nuget.config maps AgentSkills.Sdk to. A -p:RestoreSources override
+        // would defeat packageSourceMapping (NU1100: source not considered).
+        string mappedFeed = Path.Combine(RepoRoot, "artifacts", "packages");
+        Run($"pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o \"{mappedFeed}\"", RepoRoot);
         string fixtureProject = "tests/fixtures/FixtureLib/FixtureLib.csproj";
-        string restoreToFeed = $"-p:RestoreSources=\"{FeedDirectory}\"";
-        Run($"pack {fixtureProject} -c Release -o \"{FeedDirectory}\" {restoreToFeed}", RepoRoot);
-        Run($"pack {fixtureProject} -c Release -o \"{FeedDirectory}\" {restoreToFeed} -p:Version=2.0.0", RepoRoot);
+        Run($"pack {fixtureProject} -c Release -o \"{FeedDirectory}\"", RepoRoot);
+        Run($"pack {fixtureProject} -c Release -o \"{FeedDirectory}\" -p:Version=2.0.0", RepoRoot);
     }
 
     public void Dispose()
@@ -148,7 +151,7 @@ public sealed class PackedFeedFixture : IDisposable
     private static string FindRepoRoot()
     {
         DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "docs", "spec.md")))
+        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "AgentSkills.Sdk.sln")))
         {
             directory = directory.Parent;
         }
