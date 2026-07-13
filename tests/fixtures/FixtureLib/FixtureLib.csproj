@@ -25,9 +25,11 @@
     <AgentSkillScriptFiles Include="$(MSBuildProjectDirectory)/skill/tools/check.sh" />
   </ItemGroup>
 
-  <!-- ExcludeAgentSkillsSdk=true produces the no-SDK baseline nupkg for byte-level comparison. -->
+  <!-- ExcludeAgentSkillsSdk=true produces the no-SDK baseline nupkg for byte-level comparison.
+       Floating version: tests pack the SDK into the local feed first, so the
+       fixture must follow whatever version the SDK currently carries. -->
   <ItemGroup Condition="'$(ExcludeAgentSkillsSdk)' != 'true'">
-    <PackageReference Include="AgentSkills.Sdk" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="AgentSkills.Sdk" Version="*" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
