@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+
+    <PackageId>AgentSkills.Sdk</PackageId>
+    <Version>0.1.0</Version>
+    <Description>Ships agentskills.io-compliant agent skills inside a NuGet package: composes SKILL.md variants at pack time and generates the consumer-side sync targets.</Description>
+    <Authors>Rebel028</Authors>
+
+    <!-- Pack-time-only tooling (ADR-0001): no assembly, no dependencies, no
+         transitive flow. Consumers of a maintainer's package inherit nothing. -->
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- NU5128: intentional — a build-only package has no lib/ per TFM. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="build\AgentSkills.Sdk.props"   Pack="true" PackagePath="build\" />
+    <None Include="build\AgentSkills.Sdk.targets" Pack="true" PackagePath="build\" />
+    <!-- Pack Engine ships as source (ADR-0002): compiled on the maintainer's
+         machine by RoslynCodeTaskFactory, not by this project (it would drag
+         Microsoft.Build references into an otherwise dependency-free package). -->
+    <Compile Remove="tasks\**\*.cs" />
+    <None Include="tasks\AgentSkillsPackEngine.cs" Pack="true" PackagePath="tasks\" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,81 @@
+<Project>
+
+  <!-- Imported after the maintainer's project body: PackageId/AssemblyName set
+       in the .csproj are visible here. NuGet's own PackageId default
+       (PackageId = AssemblyName) may not have run yet, so mirror its fallback
+       chain instead of relying on it. -->
+  <PropertyGroup>
+    <_AgentSkillsPackageIdForFlag>$(PackageId)</_AgentSkillsPackageIdForFlag>
+    <_AgentSkillsPackageIdForFlag Condition="'$(_AgentSkillsPackageIdForFlag)' == ''">$(AssemblyName)</_AgentSkillsPackageIdForFlag>
+    <_AgentSkillsPackageIdForFlag Condition="'$(_AgentSkillsPackageIdForFlag)' == ''">$(MSBuildProjectName)</_AgentSkillsPackageIdForFlag>
+
+    <!-- Consumer Flag name (spec §5): PackageId with every non-alphanumeric
+         stripped + "AgentSkills" — MSBuild property names cannot contain dots. -->
+    <AgentSkillsConsumerFlag Condition="'$(AgentSkillsConsumerFlag)' == ''">$([System.Text.RegularExpressions.Regex]::Replace('$(_AgentSkillsPackageIdForFlag)', '[^A-Za-z0-9]', ''))AgentSkills</AgentSkillsConsumerFlag>
+  </PropertyGroup>
+
+  <!-- First-TFM guard (spec §5): package content is contributed only from the
+       first inner build so multi-TFM packs don't emit duplicate paths. For
+       single-TFM projects TargetFrameworks is empty and the guard is a no-op. -->
+  <PropertyGroup>
+    <_AgentSkillsFirstTargetFramework Condition="'$(TargetFrameworks)' != ''">$(TargetFrameworks.Split(';')[0])</_AgentSkillsFirstTargetFramework>
+    <_AgentSkillsFirstTargetFramework Condition="'$(_AgentSkillsFirstTargetFramework)' == ''">$(TargetFramework)</_AgentSkillsFirstTargetFramework>
+    <_AgentSkillsIsFirstTargetFramework Condition="'$(TargetFramework)' != '' AND '$(TargetFramework)' == '$(_AgentSkillsFirstTargetFramework)'">true</_AgentSkillsIsFirstTargetFramework>
+  </PropertyGroup>
+
+  <!-- Supported NuGet extension point for adding package files (spec §5);
+       the private _PackageFiles/_GetPackageFiles API is banned. -->
+  <PropertyGroup Condition="'$(GenerateAgentSkills)' == 'true'">
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AgentSkillsTfmSpecificContent</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <!-- The Pack Engine (ADR-0002): one .cs source file, compiled on the
+       maintainer's machine. TaskName must match the class name in the file. -->
+  <UsingTask TaskName="AgentSkillsGeneratePackTask"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll"
+             Condition="'$(GenerateAgentSkills)' == 'true'">
+    <Task>
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)..\tasks\AgentSkillsPackEngine.cs" />
+    </Task>
+  </UsingTask>
+
+  <!-- Public pack-time seam (spec §5), gated on the master switch. The engine
+       itself executes in the per-TFM content walk below, which GenerateNuspec's
+       dependencies run first — this target stays as the documented hook point
+       maintainers can attach validation or inspection to. -->
+  <Target Name="AgentSkillsGeneratePack"
+          BeforeTargets="GenerateNuspec"
+          Condition="'$(GenerateAgentSkills)' == 'true'">
+  </Target>
+
+  <!-- Runs once per inner build via TargetsForTfmSpecificContentInPackage;
+       the first-TFM guard keeps multi-TFM packs free of duplicate paths.
+       All properties here resolve at execution time, after NuGet's pack
+       defaults (PackageId, PackageVersion) have been applied. -->
+  <Target Name="_AgentSkillsTfmSpecificContent"
+          Condition="'$(GenerateAgentSkills)' == 'true' AND '$(_AgentSkillsIsFirstTargetFramework)' == 'true'">
+
+    <AgentSkillsGeneratePackTask
+        PackageId="$(PackageId)"
+        PackageVersion="$(PackageVersion)"
+        StagingDirectory="$(IntermediateOutputPath)agentskills\"
+        ProjectDirectory="$(MSBuildProjectDirectory)"
+        ConsumerFlagName="$(AgentSkillsConsumerFlag)"
+        PackageDescription="$(Description)"
+        NameOverride="$(AgentSkillNameOverride)"
+        DescriptionOverride="$(AgentSkillDescriptionOverride)"
+        BodyFile="$(AgentSkillBodyFile)"
+        FullFile="$(AgentSkillFullFile)"
+        UserInvocable="$(AgentSkillUserInvocable)"
+        ContextStrategy="$(AgentSkillContextStrategy)"
+        ReadmeFile="$(PackageReadmeFile)"
+        ReferenceFiles="@(AgentSkillReferenceFiles)"
+        AssetFiles="@(AgentSkillAssetFiles)"
+        ScriptFiles="@(AgentSkillScriptFiles)">
+      <Output TaskParameter="PackageFiles" ItemName="TfmSpecificPackageFile" />
+    </AgentSkillsGeneratePackTask>
+
+  </Target>
+
+</Project>

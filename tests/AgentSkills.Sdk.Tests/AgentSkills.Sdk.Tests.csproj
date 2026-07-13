@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- The exact sources RoslynCodeTaskFactory compiles at pack time (ADR-0002):
+       unit-tested here, shipped as .cs inside the SDK nupkg, never as a DLL. -->
+  <ItemGroup>
+    <Compile Include="../../src/AgentSkills.Sdk/tasks/AgentSkillsPackEngine.cs" Link="tasks/AgentSkillsPackEngine.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- Same MSBuild surface RoslynCodeTaskFactory provides at pack time;
+         runtime assets stay in so tests can instantiate the task directly. -->
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+  </ItemGroup>
+
+</Project>

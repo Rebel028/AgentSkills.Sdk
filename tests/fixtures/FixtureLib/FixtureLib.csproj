@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- FixtureTargetFrameworks switches the fixture to multi-targeting for the
+         integration matrix's NU5118 case. -->
+    <TargetFramework Condition="'$(FixtureTargetFrameworks)' == ''">net10.0</TargetFramework>
+    <TargetFrameworks Condition="'$(FixtureTargetFrameworks)' != ''">$(FixtureTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Description>Fixture library for AgentSkills.Sdk packaging tests.</Description>
+    <Nullable>enable</Nullable>
+    <!-- netstandard2.0 in the multi-TFM case defaults to C# 7.3, which rejects Nullable. -->
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AgentSkillBodyFile>$(MSBuildProjectDirectory)/skill/body.md</AgentSkillBodyFile>
+    <AgentSkillDescriptionOverride>Fixture rules for FixtureLib APIs.</AgentSkillDescriptionOverride>
+    <AgentSkillUserInvocable>true</AgentSkillUserInvocable>
+    <AgentSkillContextStrategy>fork</AgentSkillContextStrategy>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AgentSkillReferenceFiles Include="$(MSBuildProjectDirectory)/skill/docs/**/*.md" />
+    <AgentSkillAssetFiles Include="$(MSBuildProjectDirectory)/skill/assets/sample-config.json" />
+    <AgentSkillScriptFiles Include="$(MSBuildProjectDirectory)/skill/tools/check.sh" />
+  </ItemGroup>
+
+  <!-- ExcludeAgentSkillsSdk=true produces the no-SDK baseline nupkg for byte-level comparison.
+       Floating version: tests pack the SDK into the local feed first, so the
+       fixture must follow whatever version the SDK currently carries. -->
+  <ItemGroup Condition="'$(ExcludeAgentSkillsSdk)' != 'true'">
+    <PackageReference Include="AgentSkills.Sdk" Version="*" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

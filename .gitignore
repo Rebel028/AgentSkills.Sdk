@@ -50,8 +50,15 @@ CodeCoverage/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
+*.DotSettings.user
 
 # NUnit
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+.claude/
+.agents/
+Skills-lock.json
+.DS_Store
+artifacts/
+**/.idea/**
