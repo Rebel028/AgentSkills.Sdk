@@ -1,15 +1,15 @@
 name: Publish NuGet package
 
-# Publishes AgentSkills.Sdk to nuget.org when the SDK csproj changes on
-# master AND its <Version> actually changed. Requires the NUGET_API_KEY
-# repository secret.
-
 on:
   push:
     branches: [master]
     paths:
       - 'src/AgentSkills.Sdk/AgentSkills.Sdk.csproj'
   workflow_dispatch:
+
+permissions:
+    id-token: write
+    contents: read
 
 jobs:
   publish:
