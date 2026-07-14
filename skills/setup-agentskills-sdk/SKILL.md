@@ -42,10 +42,10 @@ Compare the installed version's major against the version documented at the top 
 
 Scan the repo for `.md` files (exclude `bin/`, `obj/`, `node_modules/`, `.git/`). Offer candidates:
 
-- **Skill Body** (`AgentSkillBodyFile`): one markdown file of agent-facing usage instructions, no frontmatter. Leaving it unset is valid — the body is then scaffolded from `<Description>` and `PackageReadmeFile`.
+- **Skill Body** (`AgentSkillBodyFile`): one markdown file of agent-facing usage instructions, no frontmatter. Leaving it unset is valid if `<Description>` or `<PackageReadmeFile>` are set — the body is then scaffolded from them.
 - **Reference docs** (`AgentSkillReferenceFiles`): API docs, guides — propose a glob like `docs/**/*.md`.
 
-Ask the Maintainer to confirm or adjust. If no suitable `.md` files exist and the Maintainer wants real content, invoke the `author-skill-docs` skill (the Authoring Skill, sibling Maintainer Skill in this repo) to draft them, then continue with the files it produced.
+Ask the Maintainer to confirm or adjust. If no suitable `.md` files exist or they are **outdated**, **inconclusive** or clearly **too small to cover the project**. Ask the Maintainer, and invoke the `author-skill-docs` skill (the Authoring Skill, sibling Maintainer Skill in this repo) to draft them, then continue with the files it produced.
 
 **Done when:** a body-file decision (path or scaffold) and a reference-file glob list are agreed.
 
