@@ -14,6 +14,23 @@
     <AgentSkillsConsumerFlag Condition="'$(AgentSkillsConsumerFlag)' == ''">$([System.Text.RegularExpressions.Regex]::Replace('$(_AgentSkillsPackageIdForFlag)', '[^A-Za-z0-9]', ''))AgentSkills</AgentSkillsConsumerFlag>
   </PropertyGroup>
 
+  <!-- AgentSkillIncludeXmlDocs (ADR-0012): the opt-in implies XML doc
+       generation, so when no DocumentationFile exists yet, set it directly
+       (that is what CoreCompile consumes) and suppress CS1591 so opting in
+       never floods an undocumented codebase with warnings.
+       GenerateDocumentationFile cannot be the trigger: the .NET SDK defaults
+       it to 'false' before NuGet package targets import, making an explicit
+       maintainer 'false' indistinguishable from the default. -->
+  <PropertyGroup Condition="'$(AgentSkillIncludeXmlDocs)' == 'true' AND '$(DocumentationFile)' == ''">
+    <DocumentationFile>$(IntermediateOutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- The bin-copy gate evaluated to false before this file was imported
+         (Microsoft.Common.CurrentVersion.targets computes it from the then-empty
+         DocumentationFile); re-open it or the compiled XML never reaches the
+         output directory and pack fails with NU5026. -->
+    <_DocumentationFileProduced>true</_DocumentationFileProduced>
+  </PropertyGroup>
+
   <!-- First-TFM guard (spec §5): package content is contributed only from the
        first inner build so multi-TFM packs don't emit duplicate paths. For
        single-TFM projects TargetFrameworks is empty and the guard is a no-op. -->
@@ -70,6 +87,8 @@
         UserInvocable="$(AgentSkillUserInvocable)"
         ContextStrategy="$(AgentSkillContextStrategy)"
         ReadmeFile="$(PackageReadmeFile)"
+        IncludeXmlDocs="$(AgentSkillIncludeXmlDocs)"
+        XmlDocFile="$(DocumentationFile)"
         ReferenceFiles="@(AgentSkillReferenceFiles)"
         AssetFiles="@(AgentSkillAssetFiles)"
         ScriptFiles="@(AgentSkillScriptFiles)">

@@ -26,7 +26,7 @@ Then call `/setup-agentskills-sdk` or ask the agent to "setup AgentSkills.Sdk" i
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="AgentSkills.Sdk" Version="0.1.1" PrivateAssets="all" />
+  <PackageReference Include="AgentSkills.Sdk" Version="1.0.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -52,6 +52,11 @@ Then call `/setup-agentskills-sdk` or ask the agent to "setup AgentSkills.Sdk" i
   <!-- Claude Code extensions (top-level in the claude variant, metadata: in the agents variant). -->
   <AgentSkillUserInvocable>true</AgentSkillUserInvocable>
   <AgentSkillContextStrategy>fork</AgentSkillContextStrategy>
+
+  <!-- Ship the compiler XML doc file verbatim as a greppable references/api-docs.xml
+       plus a navigation guide. Auto-enables doc generation and suppresses CS1591
+       when you haven't configured DocumentationFile yourself. -->
+  <!-- <AgentSkillIncludeXmlDocs>true</AgentSkillIncludeXmlDocs> -->
 
   <!-- Consumer Flag name override; default: PackageId minus non-alphanumerics + "AgentSkills". -->
   <!-- <AgentSkillsConsumerFlag>MyEngineSkills</AgentSkillsConsumerFlag> -->

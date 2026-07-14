@@ -1,6 +1,6 @@
 # AgentSkills.Sdk property reference
 
-Documented for AgentSkills.Sdk **0.1.1**. If the installed major version differs (`ls ~/.nuget/packages/agentskills.sdk/`), this table may be stale — read `~/.nuget/packages/agentskills.sdk/<version>/README.md` instead; the packed README is the authoritative surface for the installed version.
+Documented for AgentSkills.Sdk **1.0.0**. If the installed major version differs (`ls ~/.nuget/packages/agentskills.sdk/`), this table may be stale — read `~/.nuget/packages/agentskills.sdk/<version>/README.md` instead; the packed README is the authoritative surface for the installed version.
 
 ## Properties (`PropertyGroup`)
 
@@ -13,6 +13,7 @@ Documented for AgentSkills.Sdk **0.1.1**. If the installed major version differs
 | `AgentSkillDescriptionOverride` | `Guidance and rules for integrating <PackageId> APIs.` | Skill description; over 1024 chars → AGSK004 |
 | `AgentSkillUserInvocable` | unset (omitted) | Claude Code extension; top-level `user-invocable:` in the claude variant, `metadata:` in the agents variant |
 | `AgentSkillContextStrategy` | unset (omitted) | Claude Code extension; emitted as `context:` (e.g. `fork`), same variant placement |
+| `AgentSkillIncludeXmlDocs` | unset (off) | Ships the compiler XML doc file verbatim as `references/api-docs.xml` plus a static navigation guide `references/api-docs-guide.md`. When `DocumentationFile` is empty, the SDK sets it and appends `1591` to `$(NoWarn)` (no CS1591 noise); the opt-in wins over `GenerateDocumentationFile=false`. No XML file found at pack time → AGSK007 |
 | `AgentSkillsConsumerFlag` | PackageId minus non-alphanumerics + `AgentSkills` | Name of the MSBuild property consumers set to opt in (property names can't contain dots) |
 
 ## Items (`ItemGroup`)
@@ -26,6 +27,7 @@ Documented for AgentSkills.Sdk **0.1.1**. If the installed major version differs
 ## Implicit behavior
 
 - `PackageReadmeFile`, when set and present, is added as `references/README.md` unless the Maintainer already ships a file at that path.
+- With `AgentSkillIncludeXmlDocs`, Maintainer files already at `references/api-docs.xml` or `references/api-docs-guide.md` win silently over the generated ones. The `.xml` also lands in `lib/` per standard NuGet behavior (IntelliSense).
 - Skill name sanitize pipeline: lowercase → strip semver build metadata → non-`[a-z0-9]` runs become `-` → trim/collapse hyphens. `MyAwesome.Engine` `2.4.1-preview.3` → `use-myawesome-engine-v2-4-1-preview-3`.
 
 ## Consumer side (for the hand-over snippet)

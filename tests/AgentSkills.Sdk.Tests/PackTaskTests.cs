@@ -227,4 +227,84 @@ public sealed class PackTaskTests : IDisposable
         Assert.Single(readmeEntries);
         Assert.Equal(docsReadme, readmeEntries[0].ItemSpec);
     }
+
+    [Fact]
+    public void XmlDocs_opt_in_packs_xml_verbatim_guide_and_scaffold_pointer()
+    {
+        string xmlPath = Path.Combine(_workDirectory, "FixtureLib.xml");
+        File.WriteAllText(xmlPath, "<doc><members /></doc>");
+
+        AgentSkillsGeneratePackTask task = NewTask();
+        task.IncludeXmlDocs = "true";
+        task.XmlDocFile = xmlPath;
+
+        Assert.True(task.Execute(), ErrorCodes());
+
+        ITaskItem[] xmlEntries = task.PackageFiles
+            .Where(f => f.GetMetadata("PackagePath") == "agent-assets/payload/references/api-docs.xml")
+            .ToArray();
+        Assert.Single(xmlEntries);
+        Assert.Equal(xmlPath, xmlEntries[0].ItemSpec); // verbatim: source IS the compiler file
+
+        ITaskItem[] guideEntries = task.PackageFiles
+            .Where(f => f.GetMetadata("PackagePath") == "agent-assets/payload/references/api-docs-guide.md")
+            .ToArray();
+        Assert.Single(guideEntries);
+        string guide = File.ReadAllText(guideEntries[0].ItemSpec);
+        Assert.Contains("M:", guide);   // ID grammar documented
+        Assert.Contains("grep", guide); // navigation recipe documented
+
+        // Scaffolded body points at the shipped XML docs.
+        string claude = File.ReadAllText(Path.Combine(task.StagingDirectory, "SKILL.claude.md"));
+        Assert.Contains("references/api-docs.xml", claude);
+    }
+
+    [Fact]
+    public void XmlDocs_opt_in_without_xml_file_fails_with_AGSK007()
+    {
+        AgentSkillsGeneratePackTask task = NewTask();
+        task.IncludeXmlDocs = "true";
+        task.XmlDocFile = Path.Combine(_workDirectory, "does-not-exist.xml");
+
+        Assert.False(task.Execute());
+        Assert.Equal("AGSK007", ErrorCodes());
+
+        AgentSkillsGeneratePackTask emptyPath = NewTask();
+        emptyPath.IncludeXmlDocs = "true";
+
+        Assert.False(emptyPath.Execute());
+    }
+
+    [Fact]
+    public void Maintainer_files_win_over_generated_xml_docs()
+    {
+        string xmlPath = Path.Combine(_workDirectory, "FixtureLib.xml");
+        File.WriteAllText(xmlPath, "<doc><members /></doc>");
+        string ownXml = Path.Combine(_workDirectory, "api-docs.xml");
+        File.WriteAllText(ownXml, "<doc>mine</doc>");
+        TaskItem ownItem = new TaskItem(ownXml);
+
+        AgentSkillsGeneratePackTask task = NewTask();
+        task.IncludeXmlDocs = "true";
+        task.XmlDocFile = xmlPath;
+        task.ReferenceFiles = new ITaskItem[] { ownItem };
+
+        Assert.True(task.Execute(), ErrorCodes());
+
+        ITaskItem[] xmlEntries = task.PackageFiles
+            .Where(f => f.GetMetadata("PackagePath") == "agent-assets/payload/references/api-docs.xml")
+            .ToArray();
+        Assert.Single(xmlEntries);
+        Assert.Equal(ownXml, xmlEntries[0].ItemSpec);
+    }
+
+    [Fact]
+    public void XmlDocs_off_by_default_packs_nothing_extra()
+    {
+        AgentSkillsGeneratePackTask task = NewTask();
+
+        Assert.True(task.Execute(), ErrorCodes());
+        Assert.DoesNotContain(task.PackageFiles,
+            f => f.GetMetadata("PackagePath").Contains("api-docs"));
+    }
 }

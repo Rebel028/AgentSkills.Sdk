@@ -66,6 +66,7 @@ Add to the target csproj. The paths below are **examples only** — substitute t
 Then offer the optional extras — one short question each, skip anything declined; details in [references/property-table.md](references/property-table.md):
 
 - `AgentSkillAssetFiles` / `AgentSkillScriptFiles` — config templates, diagnostic scripts
+- `AgentSkillIncludeXmlDocs` — ship the compiler XML doc file as a greppable `references/api-docs.xml` (auto-enables doc generation, suppresses CS1591)
 - `AgentSkillNameOverride` / `AgentSkillDescriptionOverride` — identity tuning
 - `AgentSkillUserInvocable` / `AgentSkillContextStrategy` — Claude Code extensions
 - `AgentSkillsConsumerFlag` — rename the Consumer Flag
