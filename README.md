@@ -10,6 +10,16 @@ Ship [agentskills.io](https://agentskills.io/specification)-compliant **agent sk
 - **Repo hygiene** — every synced skill directory gitignores itself.
 - **Toolchain range** — pack and consume verified on .NET 8, 9 and 10 SDKs (CI-guarded); the package ships no binaries, so no runtime dependency exists.
 
+## Agent-assisted setup
+
+Maintainers can install this repo's Maintainer Skills and let their coding agent do the wiring:
+
+```bash
+npx skills add Rebel028/AgentSkills.Sdk
+```
+
+Then call `/setup-agentskills-sdk` or ask the agent to "setup AgentSkills.Sdk" in your library repo — it installs the package, wires doc sources into the `.csproj`, and verifies the pack.
+
 ## Maintainer quick start
 
 1. Reference the SDK (pack-time only — `PrivateAssets="all"`):
