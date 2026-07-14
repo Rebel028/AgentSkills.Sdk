@@ -1,6 +1,6 @@
 # AgentSkills.Sdk property reference
 
-Documented for AgentSkills.Sdk **0.1.1**. If the installed major version differs (`ls ~/.nuget/packages/agentskills.sdk/`), this table may be stale — read `~/.nuget/packages/agentskills.sdk/<version>/README.md` instead; the packed README is the authoritative surface for the installed version.
+Documented for AgentSkills.Sdk **1.0.0**. If the installed major version differs (`ls ~/.nuget/packages/agentskills.sdk/`), this table may be stale — read `~/.nuget/packages/agentskills.sdk/<version>/README.md` instead; the packed README is the authoritative surface for the installed version.
 
 ## Properties (`PropertyGroup`)
 
