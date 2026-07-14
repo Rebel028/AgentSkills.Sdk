@@ -17,6 +17,7 @@
     <AgentSkillDescriptionOverride>Fixture rules for FixtureLib APIs.</AgentSkillDescriptionOverride>
     <AgentSkillUserInvocable>true</AgentSkillUserInvocable>
     <AgentSkillContextStrategy>fork</AgentSkillContextStrategy>
+    <AgentSkillIncludeXmlDocs>true</AgentSkillIncludeXmlDocs>
   </PropertyGroup>
 
   <ItemGroup>

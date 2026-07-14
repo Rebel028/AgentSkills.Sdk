@@ -26,7 +26,7 @@ public sealed class PackLayoutTests
         return directory!.FullName;
     }
 
-    private static void RunDotnet(string arguments, string workingDirectory, string packagesDirectory)
+    private static string RunDotnet(string arguments, string workingDirectory, string packagesDirectory)
     {
         ProcessStartInfo start = new ProcessStartInfo("dotnet", arguments)
         {
@@ -39,6 +39,7 @@ public sealed class PackLayoutTests
         string output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
         process.WaitForExit();
         Assert.True(process.ExitCode == 0, $"dotnet {arguments} failed:\n{output}");
+        return output;
     }
 
     [Fact]
@@ -56,9 +57,12 @@ public sealed class PackLayoutTests
             RunDotnet(
                 $"pack src/AgentSkills.Sdk/AgentSkills.Sdk.csproj -c Release -o \"{feedDirectory}\"",
                 repoRoot, nugetCache);
-            RunDotnet(
+            string packOutput = RunDotnet(
                 $"pack tests/fixtures/FixtureLib/FixtureLib.csproj -c Release -o \"{output}\"",
                 repoRoot, nugetCache);
+            // Auto-enabled XML doc generation must not surface missing-comment
+            // warnings (ADR-0012); Widget.GreetCount is the undocumented canary.
+            Assert.DoesNotContain("CS1591", packOutput);
 
             using ZipArchive nupkg = ZipFile.OpenRead(Path.Combine(output, "FixtureLib.1.0.0.nupkg"));
             string[] skillEntries = nupkg.Entries
@@ -72,6 +76,8 @@ public sealed class PackLayoutTests
                 "agent-assets/SKILL.agents.md",
                 "agent-assets/SKILL.claude.md",
                 "agent-assets/payload/assets/sample-config.json",
+                "agent-assets/payload/references/api-docs-guide.md",
+                "agent-assets/payload/references/api-docs.xml",
                 "agent-assets/payload/references/api.md",
                 "agent-assets/payload/references/guides/quickstart.md",
                 "agent-assets/payload/scripts/check.sh",

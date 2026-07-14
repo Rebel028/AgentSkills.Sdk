@@ -35,6 +35,8 @@ public sealed class ConsumerMatrixTests : IClassFixture<PackedFeedFixture>
         ".gitignore",
         "SKILL.md",
         "assets/sample-config.json",
+        "references/api-docs-guide.md",
+        "references/api-docs.xml",
         "references/api.md",
         "references/guides/quickstart.md",
         "scripts/check.sh",

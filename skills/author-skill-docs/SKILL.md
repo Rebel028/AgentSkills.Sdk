@@ -11,7 +11,7 @@ Drafts the documentation a Maintainer feeds into AgentSkills.Sdk: one **Skill Bo
 
 - **Output is doc files only.** Never modify source code or the `.csproj` — in standalone mode you print the wiring snippet, you do not apply it.
 - **Skill Body contains NO YAML frontmatter block.** The SDK synthesizes `name`/`description` frontmatter at pack time. The body starts directly at its `#` heading.
-- **Never generate or edit XML doc comments in source files.** XmlDoc→markdown generation is out of scope for AgentSkills.Sdk v1 (spec §8). Read XML doc comments as input; never write them. At most, tip the Maintainer that richer XML doc comments improve future drafts.
+- **Never generate or edit XML doc comments in source files.** Read XML doc comments as input; never write them. The SDK can ship the compiler's XML doc file verbatim (`AgentSkillIncludeXmlDocs`) — rendering it to markdown stays rejected as an API dump. At most, tip the Maintainer that richer XML doc comments improve both future drafts and the shipped `references/api-docs.xml`.
 - **Do not scan the codebase without consent** (step 3). A prior instruction like "scan the code" counts as consent — record it — but the scan-tool choice still gets confirmed before scanning.
 - **Do not write a SKILL.md for the Maintainer's package.** The SDK generates it; your output is body + references only.
 
@@ -100,7 +100,7 @@ Done when: Maintainer accepted the docs and (chained) paths were handed back, or
 | Mistake | Fix |
 |---|---|
 | Body starts with `---` frontmatter | Delete it — the SDK owns frontmatter |
-| Writing/editing XML doc comments "while you're in there" | Never. Docs output only; XmlDoc→markdown is a v2 non-goal |
+| Writing/editing XML doc comments "while you're in there" | Never. Docs output only; shipping XML docs is the SDK's job (`AgentSkillIncludeXmlDocs`) |
 | Scanning before asking | Consent first, tool confirmation second, scan third |
 | Referencing docs by content instead of pointer in the body | Body should point to `references/<file>` names — the SDK packs reference docs under `references/` in the Skill |
 | Documenting every public member | Cover the top tasks and pitfalls; an API dump is noise to an agent |

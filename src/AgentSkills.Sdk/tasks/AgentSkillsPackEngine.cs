@@ -187,9 +187,10 @@ namespace AgentSkills.Sdk.Tasks
         /// <summary>
         /// Scaffolded Skill Body used when AgentSkillBodyFile is unset (spec §5
         /// step 2): heading from PackageId, the package description, and a pointer
-        /// to the references/ bucket.
+        /// to the references/ bucket — plus the API docs pointer when the compiler
+        /// XML ships (spec §5 step 3a).
         /// </summary>
-        public static string ScaffoldBody(string packageId, string description)
+        public static string ScaffoldBody(string packageId, string description, bool includeXmlDocs = false)
         {
             StringBuilder body = new StringBuilder();
             body.Append("# ").Append(packageId).Append(" guide\n\n");
@@ -198,8 +199,52 @@ namespace AgentSkills.Sdk.Tasks
                 body.Append(description.Trim()).Append("\n\n");
             }
             body.Append("See the `references/` directory for detailed documentation.\n");
+            if (includeXmlDocs)
+            {
+                body.Append("\nAPI reference: query `references/api-docs.xml` as described in `references/api-docs-guide.md`.\n");
+            }
             return body.ToString();
         }
+
+        /// <summary>
+        /// Static navigation guide shipped beside the verbatim compiler XML doc
+        /// file (ADR-0012): ID grammar and grep recipes so an agent queries
+        /// members on demand instead of reading the file whole.
+        /// </summary>
+        public const string ApiDocsGuide = @"# API docs navigation guide
+
+`api-docs.xml` is the C# compiler's XML documentation file for this package,
+shipped verbatim. Do not read it whole — query it: every member ID is fully
+qualified, so plain text search is precise.
+
+## Member ID grammar
+
+| Prefix | Kind |
+|---|---|
+| `T:` | type |
+| `M:` | method or constructor (`#ctor`) |
+| `P:` | property or indexer |
+| `F:` | field |
+| `E:` | event |
+
+Generics: arity suffix with a backtick — ``T:Ns.List`1`` for types,
+```M:Ns.Type.Map``1``` for generic methods; generic parameters in signatures
+appear as `{T}` or backtick references.
+
+## Query recipes
+
+    grep -A8 'Widget.Greet' api-docs.xml        # one member with its docs
+    grep 'name=""T:' api-docs.xml               # list all documented types
+    grep -B1 -A8 'M:.*Parse' api-docs.xml       # methods by name fragment
+
+## Reading an entry
+
+- `<summary>` says what it does; `<param name>`, `<returns>`,
+  `<exception cref>`, `<remarks>`, `<example>` appear when authored.
+- `cref` attributes use the same ID grammar; text is XML-escaped (`&lt;` …).
+- `<inheritdoc/>` is NOT expanded — follow it to the base type or interface
+  member manually.
+";
 
         /// <summary>
         /// claude Variant (ADR-0003): Claude Code extension keys live top-level so
@@ -314,6 +359,12 @@ namespace AgentSkills.Sdk.Tasks
         /// <summary>PackageReadmeFile; added as references/README.md unless taken (spec §2).</summary>
         public string ReadmeFile { get; set; } = "";
 
+        /// <summary>AgentSkillIncludeXmlDocs raw value; "true" ships the compiler XML docs (ADR-0012).</summary>
+        public string IncludeXmlDocs { get; set; } = "";
+
+        /// <summary>$(DocumentationFile); the compiler XML doc file packed verbatim (AGSK007 when absent).</summary>
+        public string XmlDocFile { get; set; } = "";
+
         /// <summary>@(AgentSkillReferenceFiles); RecursiveDir structure preserved.</summary>
         public ITaskItem[] ReferenceFiles { get; set; } = new ITaskItem[0];
 
@@ -365,6 +416,18 @@ namespace AgentSkills.Sdk.Tasks
                 return false;
             }
 
+            bool includeXmlDocs = string.Equals(IncludeXmlDocs.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+            string xmlDocPath = "";
+            if (includeXmlDocs)
+            {
+                xmlDocPath = string.IsNullOrWhiteSpace(XmlDocFile) ? "" : ResolvePath(XmlDocFile.Trim());
+                if (xmlDocPath.Length == 0 || !File.Exists(xmlDocPath))
+                {
+                    LogAgskError("AGSK007", $"AgentSkillIncludeXmlDocs is set but no XML documentation file was found ('{xmlDocPath}'). Enable GenerateDocumentationFile (or leave it unset so the SDK enables it) or remove AgentSkillIncludeXmlDocs.");
+                    return false;
+                }
+            }
+
             string claudeVariant;
             string agentsVariant;
             if (!string.IsNullOrWhiteSpace(FullFile))
@@ -395,7 +458,7 @@ namespace AgentSkills.Sdk.Tasks
                 }
                 else
                 {
-                    body = AgentSkillsCore.ScaffoldBody(PackageId, PackageDescription);
+                    body = AgentSkillsCore.ScaffoldBody(PackageId, PackageDescription, includeXmlDocs);
                 }
 
                 SkillFrontmatter frontmatter = new SkillFrontmatter(
@@ -448,6 +511,24 @@ namespace AgentSkills.Sdk.Tasks
                 if (File.Exists(readmePath) && !payloadPaths.Contains(readmeDestination))
                 {
                     files.Add(PackageFile(readmePath, readmeDestination));
+                }
+            }
+
+            // Compiler XML docs ship verbatim with their navigation guide
+            // (ADR-0012); maintainer files at either path win, like the README.
+            if (includeXmlDocs)
+            {
+                string xmlDestination = "agent-assets/payload/references/api-docs.xml";
+                if (!payloadPaths.Contains(xmlDestination))
+                {
+                    files.Add(PackageFile(xmlDocPath, xmlDestination));
+                }
+                string guideDestination = "agent-assets/payload/references/api-docs-guide.md";
+                if (!payloadPaths.Contains(guideDestination))
+                {
+                    string guidePath = Path.Combine(StagingDirectory, "api-docs-guide.md");
+                    File.WriteAllText(guidePath, AgentSkillsCore.ApiDocsGuide);
+                    files.Add(PackageFile(guidePath, guideDestination));
                 }
             }
 

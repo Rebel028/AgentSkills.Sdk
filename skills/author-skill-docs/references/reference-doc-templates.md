@@ -51,4 +51,6 @@ defaults, valid ranges, ordering constraints, lifetime/disposal rules.>
 Add only when the package has a distinct advanced area that would bloat the
 other two — e.g. `configuration.md`, `extensibility.md`, `migration.md`.
 Same rules: one concern, scanned-API-grounded snippets, no member-by-member
-dumps (XmlDoc→markdown generation is deliberately out of scope).
+dumps — for member-level detail the Maintainer can ship the compiler XML docs
+verbatim via `AgentSkillIncludeXmlDocs`; rendering them to markdown is
+deliberately rejected.
